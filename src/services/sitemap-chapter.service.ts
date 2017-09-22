@@ -13,9 +13,8 @@ import 'rxjs/add/observable/empty'
 import 'rxjs/add/observable/merge'
 import 'rxjs/add/observable/defer'
 //import 'rxjs/add/observable/startWith'
-import { LocaleService } from '../../i18n/module'
+import { LocaleService } from 'kio-ng2-i18n'
 import { Injectable, Inject, EventEmitter, Optional } from '@angular/core'
-import { Router, NavigationEnd } from '@angular/router'
 import { SITEMAP_CONFIG } from '../injection/SitemapConfig.token'
 import { DATA_RESOLVER } from '../injection/DataResolver.token'
 import { Data, AbstractData, SlugMap, DataResolver, LocalizedChapter, ChapterConfig, Config } from '../interfaces'
@@ -51,7 +50,7 @@ export class SitemapChapterService {
     return Observable.of(...allModels).concatMap( model => this.mapChapterModelData(model) )
   } )
 
-  public gotoChapter ( chapterItem:SitemapChapter|LocalizedChapter ) {
+  public gotoChapter ( chapterItem:SitemapChapter|LocalizedChapter ):Observable<boolean> {
     if ( isLocalizedChapter(chapterItem) ) {
       return this.sitemapService.navigateToChapter(chapterItem)
     } else  {

@@ -1,4 +1,5 @@
 import { Observable } from 'rxjs/Observable'
+import { Subscription } from 'rxjs/Subscription'
 import 'rxjs/add/operator/concatMap'
 import 'rxjs/add/operator/map'
 import 'rxjs/add/operator/mapTo'
@@ -14,8 +15,8 @@ import 'rxjs/add/observable/empty'
 import 'rxjs/add/observable/merge'
 import 'rxjs/add/observable/defer'
 //import 'rxjs/add/observable/startWith'
-import { LocaleService } from '../../i18n/module'
-import { Injectable, Inject, EventEmitter, Optional } from '@angular/core'
+import { LocaleService } from 'kio-ng2-i18n'
+import { isDevMode, Injectable, Inject, EventEmitter, Optional } from '@angular/core'
 import { Router, NavigationEnd } from '@angular/router'
 import { SITEMAP_CONFIG } from '../injection/SitemapConfig.token'
 import { Config, LocalizedChapter, ChapterConfig, ChapterLocalizer, SlugMap } from '../interfaces'
@@ -124,7 +125,9 @@ export class SitemapService {
 
     if ( url !== defaultURL ) {
       this.router.navigateByUrl(defaultURL).then ( success => {
-        this.logger.log('did %sforward to %s', success ? '' : 'not ', defaultURL)
+        if ( isDevMode() ) {
+          console.log('did %sforward to %s', success ? '' : 'not ', defaultURL)
+        }
       } )
     }
   } )
@@ -163,7 +166,7 @@ export class SitemapService {
     return Observable.fromPromise ( this.router.navigateByUrl ( url ) )
   }
 
-  public renderURL ( locale:string, slug?:string ) {
+  public renderURL ( locale:string, slug?:string ):string {
     if ( !slug ) {
       return this.renderURL ( locale, this.config.chapters[0].slug[locale] )
     }
@@ -228,10 +231,5 @@ export class SitemapService {
     return this.config.chapters.find ( chapter => chapter.cuid === cuid )
   }
 
-  protected logger=window.afkm.logger.cloneToScope(this)
-
-  private _sitemapChapterSubscription=this.logger.observe(this,'sitemapChapter')
-  private _currentUrlSubscription=this.logger.observe(this,'currentUrl')
-  private _chaptersSubscription=this.logger.observe(this,'chapters')
   
 }
