@@ -17,7 +17,7 @@ import 'rxjs/add/observable/defer'
 //import 'rxjs/add/observable/startWith'
 import { LocaleService } from 'kio-ng2-i18n'
 import { isDevMode, Injectable, Inject, EventEmitter, Optional } from '@angular/core'
-import { Router, NavigationEnd } from '@angular/router'
+import { Router, NavigationEnd, NavigationStart } from '@angular/router'
 import { SITEMAP_CONFIG } from '../injection/SitemapConfig.token'
 import { Config, LocalizedChapter, ChapterConfig, ChapterLocalizer, SlugMap } from '../interfaces'
 import { URLResolver } from '../resolver/url-resolver'
@@ -59,6 +59,10 @@ export class SitemapService {
 
   }
 
+  nextUrl=this.router.events.filter ( event => event instanceof NavigationStart )
+    .map ( (event:NavigationStart) => event.url )
+    .distinctUntilChanged()
+
   /** observable of url emitted after the router emitted an NavigationEnd event */
   currentUrl=this.router.events.filter ( event => (event instanceof NavigationEnd ) )
     .map ( (event:NavigationEnd) => event.url )
@@ -71,6 +75,8 @@ export class SitemapService {
   locale=this.currentUrl.map ( url => this.urlResolver.resolveLocaleFromURL(url) ).distinctUntilChanged()
   lang=this.currentUrl.map ( url => this.urlResolver.resolveLangFromURL(url) ).distinctUntilChanged()
   
+  nextChapterConfig=this.nextUrl.map ( url => this.urlResolver.resolveChapterConfigFromURL(url) )
+
   chapterConfig=this.currentUrl.map ( url => this.urlResolver.resolveChapterConfigFromURL(url) )
 
   /** observable of current sitemap chapter, emits on initialization and on locale changes */
@@ -100,6 +106,7 @@ export class SitemapService {
     return Observable.of(...this.config.chapters).map ( chapterLocalizer ).toArray()
   } )
 
+  private _didNavigate:boolean=false
 
   /** @type {SitemapChapter} current sitemap chapter */
   protected currentChapter:LocalizedChapter
@@ -111,7 +118,7 @@ export class SitemapService {
 
   /** forwarding */
 
-  protected forwardUrl=this.currentUrl.subscribe ( url => {
+  protected forwardUrl=this.nextUrl.subscribe ( url => {
     if ( url.substr(1).startsWith('dev') ) {
       return
     }
@@ -120,6 +127,14 @@ export class SitemapService {
       locale = this.localeService.currentLocale
     }
     let chapterConfig = this.urlResolver.resolveChapterConfigFromURL ( url )
+
+    if ( !this._didNavigate && this.config.forceFirstPageEntry === true && this.config.pagingEnabled ) {
+
+      chapterConfig = this.config.chapters[0]
+      this._didNavigate = true
+
+    }
+
     const localizedChapter = SitemapService.chapterLocalizerFactory ( locale ) ( chapterConfig )
     const defaultURL = this.renderURL ( localizedChapter.locale, localizedChapter.slug )
 

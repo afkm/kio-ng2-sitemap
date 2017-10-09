@@ -24,7 +24,7 @@ import 'rxjs/add/observable/defer';
 //import 'rxjs/add/observable/startWith'
 import { LocaleService } from 'kio-ng2-i18n';
 import { isDevMode, Injectable, Inject, Optional } from '@angular/core';
-import { Router, NavigationEnd } from '@angular/router';
+import { Router, NavigationEnd, NavigationStart } from '@angular/router';
 import { SITEMAP_CONFIG } from '../injection/SitemapConfig.token';
 import { URLResolver } from '../resolver/url-resolver';
 var SitemapService = /** @class */ (function () {
@@ -34,6 +34,9 @@ var SitemapService = /** @class */ (function () {
         this.localeService = localeService;
         this.router = router;
         this.urlResolver = urlResolver;
+        this.nextUrl = this.router.events.filter(function (event) { return event instanceof NavigationStart; })
+            .map(function (event) { return event.url; })
+            .distinctUntilChanged();
         /** observable of url emitted after the router emitted an NavigationEnd event */
         this.currentUrl = this.router.events.filter(function (event) { return (event instanceof NavigationEnd); })
             .map(function (event) { return event.url; })
@@ -44,6 +47,7 @@ var SitemapService = /** @class */ (function () {
         } )*/
         this.locale = this.currentUrl.map(function (url) { return _this.urlResolver.resolveLocaleFromURL(url); }).distinctUntilChanged();
         this.lang = this.currentUrl.map(function (url) { return _this.urlResolver.resolveLangFromURL(url); }).distinctUntilChanged();
+        this.nextChapterConfig = this.nextUrl.map(function (url) { return _this.urlResolver.resolveChapterConfigFromURL(url); });
         this.chapterConfig = this.currentUrl.map(function (url) { return _this.urlResolver.resolveChapterConfigFromURL(url); });
         /** observable of current sitemap chapter, emits on initialization and on locale changes */
         this.sitemapChapter = this.chapterConfig.filter(function (chapter) { return chapter !== undefined; })
@@ -70,12 +74,13 @@ var SitemapService = /** @class */ (function () {
             var chapterLocalizer = SitemapService.chapterLocalizerFactory(sitemapChapter.locale);
             return Observable.of.apply(Observable, _this.config.chapters).map(chapterLocalizer).toArray();
         });
+        this._didNavigate = false;
         /** subscription to update sitemapChapter on emission of sitemapChapter */
         this.currentChapterSubscription = this.sitemapChapter.subscribe(function (chapter) {
             _this.currentChapter = chapter;
         });
         /** forwarding */
-        this.forwardUrl = this.currentUrl.subscribe(function (url) {
+        this.forwardUrl = this.nextUrl.subscribe(function (url) {
             if (url.substr(1).startsWith('dev')) {
                 return;
             }
@@ -84,6 +89,10 @@ var SitemapService = /** @class */ (function () {
                 locale = _this.localeService.currentLocale;
             }
             var chapterConfig = _this.urlResolver.resolveChapterConfigFromURL(url);
+            if (!_this._didNavigate && _this.config.forceFirstPageEntry === true && _this.config.pagingEnabled) {
+                chapterConfig = _this.config.chapters[0];
+                _this._didNavigate = true;
+            }
             var localizedChapter = SitemapService.chapterLocalizerFactory(locale)(chapterConfig);
             var defaultURL = _this.renderURL(localizedChapter.locale, localizedChapter.slug);
             if (url !== defaultURL) {
