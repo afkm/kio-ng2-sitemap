@@ -22,7 +22,7 @@ function syncDir () {
   local dir_name="${1}"
 
   if [[ -d "${MODULE_ROOT}/${dir_name}" ]]; then
-    rsync -azh --delete "${MODULE_ROOT}/${dirname}/." "${TARGET_MODULE}/${dirname}/."
+    rsync -azh --delete "${MODULE_ROOT}/${dir_name}/." "${TARGET_MODULE}/${dir_name}/."
   fi
 }
 

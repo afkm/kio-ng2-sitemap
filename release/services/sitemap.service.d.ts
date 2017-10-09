@@ -38,10 +38,12 @@ export declare class SitemapService {
      */
     static chapterLocalizerFactory(locale: string): (chapter: ChapterConfig) => LocalizedChapter;
     constructor(config: Config, localeService: LocaleService, router: Router, urlResolver: URLResolver);
+    nextUrl: Observable<string>;
     /** observable of url emitted after the router emitted an NavigationEnd event */
     currentUrl: Observable<string>;
     locale: Observable<string>;
     lang: Observable<string>;
+    nextChapterConfig: Observable<ChapterConfig>;
     chapterConfig: Observable<ChapterConfig>;
     /** observable of current sitemap chapter, emits on initialization and on locale changes */
     sitemapChapter: Observable<LocalizedChapter>;
@@ -49,6 +51,7 @@ export declare class SitemapService {
     chapters: Observable<LocalizedChapter[]>;
     /** observable of all localized sitemap chapters, emits on initialization and on locale changes */
     allChapters: Observable<LocalizedChapter[]>;
+    private _didNavigate;
     /** @type {SitemapChapter} current sitemap chapter */
     protected currentChapter: LocalizedChapter;
     /** subscription to update sitemapChapter on emission of sitemapChapter */

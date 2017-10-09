@@ -16,6 +16,13 @@ export interface Config {
   pagingEnabled?: boolean
 
   /**
+   * only valid for pagingEnabled==true
+   * true => force entry in first chapter
+   * false => allow deep links (default)
+   */
+  forceFirstPageEntry?: boolean
+
+  /**
    * supported locales
    */
   locales: string[]
