@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common'
 import { NgModule, ModuleWithProviders, Provider } from '@angular/core'
 import { KioNg2i18nModule } from 'kio-ng2-i18n'
 import { BackendService, KioCtnModule } from 'kio-ng2-ctn'
+import { ScrollService } from 'kio-ng2-scrolling'
 
 import { SitemapChapter } from './classes/sitemap-chapter.class'
 export { SitemapChapter } from './classes/sitemap-chapter.class'
@@ -48,6 +49,7 @@ export let defaultSitemapConfig:Config = {
   imports: [CommonModule,KioCtnModule,KioNg2i18nModule],
   //declarations: [],
   providers: [ 
+    ScrollService,
     URLResolver,
     {
       provide: SITEMAP_CONFIG,

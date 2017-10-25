@@ -11,16 +11,18 @@ import 'rxjs/add/operator/filter'
 import 'rxjs/add/operator/shareReplay'
 import 'rxjs/add/operator/toArray'
 import 'rxjs/add/observable/of'
+import 'rxjs/add/observable/fromPromise'
 import 'rxjs/add/observable/empty'
 import 'rxjs/add/observable/merge'
 import 'rxjs/add/observable/defer'
 //import 'rxjs/add/observable/startWith'
 import { LocaleService } from 'kio-ng2-i18n'
 import { isDevMode, Injectable, Inject, EventEmitter, Optional } from '@angular/core'
-import { Router, NavigationEnd, NavigationStart } from '@angular/router'
+import { Router, NavigationEnd } from '@angular/router'
 import { SITEMAP_CONFIG } from '../injection/SitemapConfig.token'
 import { Config, LocalizedChapter, ChapterConfig, ChapterLocalizer, SlugMap } from '../interfaces'
 import { URLResolver } from '../resolver/url-resolver'
+import * as urlUtil from 'url'
 
 @Injectable()
 export class SitemapService {
@@ -51,17 +53,13 @@ export class SitemapService {
 
   constructor(
       @Inject(SITEMAP_CONFIG) readonly config:Config,
-      @Optional() protected localeService:LocaleService,
-      protected router:Router,
-      protected urlResolver:URLResolver
+      @Optional() @Inject(LocaleService) protected localeService:LocaleService,
+      @Inject(Router) protected router:Router,
+      @Inject(URLResolver) protected urlResolver:URLResolver
     )
   {
 
   }
-
-  nextUrl=this.router.events.filter ( event => event instanceof NavigationStart )
-    .map ( (event:NavigationStart) => event.url )
-    .distinctUntilChanged()
 
   /** observable of url emitted after the router emitted an NavigationEnd event */
   currentUrl=this.router.events.filter ( event => (event instanceof NavigationEnd ) )
@@ -74,9 +72,12 @@ export class SitemapService {
 
   locale=this.currentUrl.map ( url => this.urlResolver.resolveLocaleFromURL(url) ).distinctUntilChanged()
   lang=this.currentUrl.map ( url => this.urlResolver.resolveLangFromURL(url) ).distinctUntilChanged()
-  
-  nextChapterConfig=this.nextUrl.map ( url => this.urlResolver.resolveChapterConfigFromURL(url) )
 
+  private dbg_locale = this.locale.subscribe ( ll => {
+    //console.log('dbg_locale', ll)
+    this.localeService.updateLocale (ll)
+  } )
+  
   chapterConfig=this.currentUrl.map ( url => this.urlResolver.resolveChapterConfigFromURL(url) )
 
   /** observable of current sitemap chapter, emits on initialization and on locale changes */
@@ -84,9 +85,10 @@ export class SitemapService {
   .withLatestFrom ( this.locale, ( chapterConfig, locale ) => {
     return SitemapService.chapterLocalizerFactory (locale)(chapterConfig)
   } )
-  .flatMap ( sitemapChapter => {
+  .distinctUntilChanged ( ( prev:LocalizedChapter, curr:LocalizedChapter) => prev.slug === curr.slug )
+  /*.flatMap ( sitemapChapter => {
     return this.updateLocale ( sitemapChapter.locale ).mapTo(sitemapChapter)
-  } )
+  } )*/
 
   /** observable of current localized sitemap chapters, emits on initialization and on locale changes */
   chapters:Observable<LocalizedChapter[]>=this.sitemapChapter
@@ -106,40 +108,42 @@ export class SitemapService {
     return Observable.of(...this.config.chapters).map ( chapterLocalizer ).toArray()
   } )
 
-  private _didNavigate:boolean=false
 
   /** @type {SitemapChapter} current sitemap chapter */
   protected currentChapter:LocalizedChapter
 
   /** subscription to update sitemapChapter on emission of sitemapChapter */
-  protected currentChapterSubscription=this.sitemapChapter.subscribe ( (chapter:LocalizedChapter) => {
+  private currentChapterSubscription=this.sitemapChapter.subscribe ( (chapter:LocalizedChapter) => {
     this.currentChapter = chapter
   } )
 
   /** forwarding */
 
-  protected forwardUrl=this.nextUrl.subscribe ( url => {
-    if ( url.substr(1).startsWith('dev') ) {
-      return
+  private forwardUrl=this.currentUrl.subscribe ( (url:string) => {
+
+    const urlObj = urlUtil.parse ( url )
+
+    if ( this.urlResolver.isDevURL(urlObj.pathname) ) {
+      if ( !isDevMode() ) {
+        this.router.navigateByUrl('/').then ( () => {
+          console.warn('dev routes disabled in production')
+        } )
+      } else {
+        return
+      }
     }
-    let locale = this.urlResolver.parseLocaleFromURL(url)
+
+    const query = this.urlResolver.parseQueryFromURL(url)
+    let locale = this.urlResolver.parseLocaleFromURL(urlObj.pathname)
     if ( !locale ) {
       locale = this.localeService.currentLocale
     }
-    let chapterConfig = this.urlResolver.resolveChapterConfigFromURL ( url )
-
-    if ( !this._didNavigate && this.config.forceFirstPageEntry === true && this.config.pagingEnabled ) {
-
-      chapterConfig = this.config.chapters[0]
-      this._didNavigate = true
-
-    }
-
+    let chapterConfig = this.urlResolver.resolveChapterConfigFromURL ( urlObj.pathname )
     const localizedChapter = SitemapService.chapterLocalizerFactory ( locale ) ( chapterConfig )
-    const defaultURL = this.renderURL ( localizedChapter.locale, localizedChapter.slug )
+    const defaultURL = this.renderURL ( localizedChapter.locale, localizedChapter.slug ) + query
 
-    if ( url !== defaultURL ) {
-      this.router.navigateByUrl(defaultURL).then ( success => {
+    if ( urlObj.path.indexOf(defaultURL) !== 0 ) {
+      this.router.navigateByUrl(defaultURL).then ( (success:boolean) => {
         if ( isDevMode() ) {
           console.log('did %sforward to %s', success ? '' : 'not ', defaultURL)
         }
@@ -176,7 +180,7 @@ export class SitemapService {
     } )
   }
 
-  public navigateToChapter ( chapter:LocalizedChapter ) {
+  public navigateToChapter ( chapter:LocalizedChapter ):Observable<boolean> {
     const url = this.renderURL ( chapter.locale, chapter.slug )
     return Observable.fromPromise ( this.router.navigateByUrl ( url ) )
   }
@@ -231,7 +235,7 @@ export class SitemapService {
   }
 
   /** changes current locale and returns an observable of the new observable */
-  private updateLocale ( nextLocale:string ) {
+  private updateLocale ( nextLocale:string ):Observable<string> {
     if ( this.localeService && this.localeService.currentLocale !== nextLocale ) {
       return Observable.merge ( this.localeService.changes.take(1), Observable.defer(()=>{
         this.localeService.updateLocale(nextLocale)
@@ -242,9 +246,8 @@ export class SitemapService {
     }
   }
 
-  private getChapterConfigByCuid ( cuid:string ) {
+  private getChapterConfigByCuid ( cuid:string ):ChapterConfig {
     return this.config.chapters.find ( chapter => chapter.cuid === cuid )
   }
-
   
 }
