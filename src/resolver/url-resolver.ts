@@ -2,6 +2,9 @@ import { Injectable, Inject } from '@angular/core'
 import * as path from 'path'
 import { SITEMAP_CONFIG } from '../injection/SitemapConfig.token'
 import { Config, LocalizedChapter, ChapterConfig, ChapterLocalizer, SlugMap } from '../interfaces'
+import * as urlUtil from 'url'
+import * as querystring from 'querystring'
+
 
 @Injectable()
 export class URLResolver {
@@ -13,6 +16,15 @@ export class URLResolver {
   constructor ( 
     @Inject(SITEMAP_CONFIG) readonly config:Config
    ) {
+
+  }
+
+  public isDevURL ( url:string|string[] ) {
+    if ( !Array.isArray(url) ) {
+      return this.isDevURL(this.splitURL (url))
+    }
+
+    return url[0] === 'dev'
 
   }
 
@@ -40,6 +52,13 @@ export class URLResolver {
     return this.config.locales.find ( ll => ll.substr(0,2) === lang )
   }
   
+  public parseQueryFromURL ( url:string ) {
+
+    const _url = urlUtil.parse(url)
+    return _url.query ? _url.search : ''
+
+  }
+
   /** returns matching lang for url; if lang is empty or not compatible, the lang for default locale is returned  */
   public resolveLangFromURL ( url:string|string[] ):string {
     return URLResolver.LangFromLocale( this.resolveLocaleFromURL(url) )
