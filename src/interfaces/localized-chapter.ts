@@ -1,8 +1,8 @@
 import { ChapterConfig } from './config'
+import { Chapter } from './chapter'
 
-export interface LocalizedChapter {
+export interface LocalizedChapter extends Chapter {
   slug: string
-  cuid: string
   locale: string
   intro?: boolean
   title?: string

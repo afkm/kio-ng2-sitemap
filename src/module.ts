@@ -15,11 +15,14 @@ import { SITEMAP_CONFIG } from './injection/SitemapConfig.token'
 import { Config, LocalizedChapter, ChapterConfig } from './interfaces'
 import { SitemapService } from './services/sitemap.service'
 import { SitemapChapterService } from './services/sitemap-chapter.service'
+import { ChapterResolver } from './resolver/chapter-resolver'
 
 export { SITEMAP_CONFIG } from './injection/SitemapConfig.token'
 export { SitemapService } from './services/sitemap.service'
 export { SitemapChapterService } from './services/sitemap-chapter.service'
 export { Config, LocalizedChapter, ChapterConfig } from './interfaces'
+export { ChapterResolver } from './resolver/chapter-resolver'
+
 
 /**
  * should be overridden through app module config
@@ -60,7 +63,8 @@ export let defaultSitemapConfig:Config = {
       useClass: BackendService
     },
     SitemapService,
-    SitemapChapterService
+    SitemapChapterService,
+    ChapterResolver
   ],
   //entryComponents: [],
   exports: [CommonModule,KioNg2i18nModule]

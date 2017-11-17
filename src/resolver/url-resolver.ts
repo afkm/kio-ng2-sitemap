@@ -19,7 +19,7 @@ export class URLResolver {
 
   }
 
-  public isDevURL ( url:string|string[] ) {
+  public isDevURL ( url:string|string[] ):boolean {
     if ( !Array.isArray(url) ) {
       return this.isDevURL(this.splitURL (url))
     }

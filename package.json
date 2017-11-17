@@ -4,7 +4,7 @@
 	"description": "",
 	"main": "./src/module",
 	"module": "./src/module",
-	"typings": "./release/module.d.ts",
+	"typings": "./src/module.ts",
 	"scripts": {
 		"test": "ts-mocha ./src/**/*.spec.ts",
 		"pretest": "npm run build",
