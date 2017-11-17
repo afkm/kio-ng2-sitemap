@@ -1,6 +1,6 @@
 {
 	"name": "kio-ng2-sitemap",
-	"version": "0.0.3",
+	"version": "0.0.4",
 	"description": "",
 	"main": "./src/module",
 	"module": "./src/module",
