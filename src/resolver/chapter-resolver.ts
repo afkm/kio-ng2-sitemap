@@ -36,6 +36,7 @@ export class ChapterResolver {
     return this.translateService.get(`Chapter ${index}`).map ( (chapterTitle:string) => {
 
       return {
+        ...config,
         cuid: config.cuid,
         slug: config.slug[this.localeService.currentLocale],
         title: chapterTitle,

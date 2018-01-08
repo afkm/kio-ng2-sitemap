@@ -6,6 +6,7 @@ export interface LocalizedChapter extends Chapter {
   locale: string
   intro?: boolean
   title?: string
+  hideInNavigation?: boolean
 }
 
 export interface ChapterLocalizer {

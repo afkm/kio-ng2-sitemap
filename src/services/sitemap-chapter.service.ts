@@ -23,7 +23,6 @@ import { SitemapChapter } from '../classes/sitemap-chapter.class'
 
 import { ChapterState } from '../enums/sitemap-chapter-state.enum'
 import { KioPublicationModel, KioQueryResult, KioQuery } from 'kio-ng2-data'
-
 import { isChapterConfig, isLocalizedChapter } from '../typechecks'
 
 @Injectable()
@@ -38,12 +37,16 @@ export class SitemapChapterService {
 
   config=this.sitemapService.config
 
+  expandChapter ( localizedChapter:LocalizedChapter ) {
+    return new SitemapChapter(this.sitemapService.config,localizedChapter,this.dataResolver)
+  }
+
   models:Observable<SitemapChapter>=this.sitemapService.chapters.flatMap ( chapters => {
-    return chapters.map ( chapter => new SitemapChapter(this.sitemapService.config,chapter,this.dataResolver) )
+    return chapters.map ( chapter => this.expandChapter(chapter) )
   } ) 
 
   allModels:Observable<SitemapChapter[]>=this.sitemapService.allChapters.map ( chapters => {
-    return chapters.map ( chapter => new SitemapChapter(this.sitemapService.config,chapter,this.dataResolver) )
+    return chapters.map ( chapter => this.expandChapter(chapter) )
   } ) 
 
   navigation:Observable<LocalizedChapter>=this.allModels.concatMap ( allModels => {
@@ -58,7 +61,7 @@ export class SitemapChapterService {
     }
   }
 
-  public chapterForCUID ( cuid:string ) {
+  public chapterForCUID ( cuid:string ):LocalizedChapter {
     return this.sitemapService.findChapterConfig (cuid,true)
   }
 
@@ -66,6 +69,7 @@ export class SitemapChapterService {
     const chapterConfig = this.sitemapService.config.chapters.find ( c => c.cuid === chapter.cuid )
     return chapter.data.map ( (payload):LocalizedChapter => {      
       return {
+        ...<any>chapter,
         cuid: chapter.cuid,
         locale: chapter.locale,
         slug: chapterConfig.slug[chapter.locale],

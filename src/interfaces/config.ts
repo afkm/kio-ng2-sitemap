@@ -6,6 +6,7 @@ export interface ChapterConfig {
   slug: SlugMap
   cuid: string
   intro?: boolean
+  hideInNavigation?: boolean
 }
 
 export interface Config {
