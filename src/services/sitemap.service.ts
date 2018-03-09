@@ -85,10 +85,14 @@ export class SitemapService {
 
   /** observable of current sitemap chapter, emits on initialization and on locale changes */
   sitemapChapter=this.chapterConfig.filter(chapter => chapter !== undefined)
-  .withLatestFrom ( this.locale, ( chapterConfig, locale ) => {
+  //.withLatestFrom ( this.locale, ( chapterConfig, locale ) => { 
+   .map ( chapterConfig => {
+    const locale = this.localeService.current
     return SitemapService.chapterLocalizerFactory (locale)(chapterConfig)
   } )
-  .distinctUntilChanged ( ( prev:LocalizedChapter, curr:LocalizedChapter) => prev.slug === curr.slug )
+  /*.distinctUntilChanged ( ( prev:LocalizedChapter, curr:LocalizedChapter) => {
+    return prev.slug === curr.slug
+  } )*/
   /*.flatMap ( sitemapChapter => {
     return this.updateLocale ( sitemapChapter.locale ).mapTo(sitemapChapter)
   } )*/
@@ -208,12 +212,11 @@ export class SitemapService {
    * @return     sitemap chapter or undefined
    */
   public sitemapChapterByUrl ( url:string ):LocalizedChapter {
-    const chapterConfigs:ChapterConfig[] = this.config.chapters.slice()
     if ( url.substr(0,1) === '/' ) {
       return this.sitemapChapterByUrl ( url.slice(1) )
     } else {
-      return chapterConfigs.map ( chapterConfig => {
-        const locale = SitemapService.keyWithSlug(chapterConfig.slug, url )
+      return this.config.chapters.map ( chapterConfig => {
+        const locale = SitemapService.keyWithSlug(chapterConfig.slug, url)
         if ( !locale ) {
           return undefined
         } else {
