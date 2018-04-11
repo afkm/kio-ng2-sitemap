@@ -13,7 +13,7 @@ export class URLResolver {
     return locale.substr(0,2)
   }
 
-  constructor ( 
+  constructor (
     @Inject(SITEMAP_CONFIG) readonly config:Config
    ) {
 
@@ -36,13 +36,13 @@ export class URLResolver {
   public resolveLocaleFromURL ( url:string|string[] ):string {
     if ( !Array.isArray(url) ) {
       return this.resolveLocaleFromURL (this.splitURL(url))
-    } 
+    }
 
     const [ lang='' ] = url
     const locale = this.config.locales.find ( l => l.substr(0,2) === lang )
     return locale || this.config.locales[0]
   }
-  
+
   public parseLocaleFromURL ( url:string|string[] ):string {
     if ( !Array.isArray(url) ) {
       return this.parseLocaleFromURL (this.splitURL(url))
@@ -51,7 +51,7 @@ export class URLResolver {
     const [ lang='' ] = url
     return this.config.locales.find ( ll => ll.substr(0,2) === lang )
   }
-  
+
   public parseQueryFromURL ( url:string ) {
 
     const _url = urlUtil.parse(url)
@@ -63,11 +63,11 @@ export class URLResolver {
   public resolveLangFromURL ( url:string|string[] ):string {
     return URLResolver.LangFromLocale( this.resolveLocaleFromURL(url) )
   }
-  
-  public resolveSlugFromURL ( url:string|string[] ):string { 
+
+  public resolveSlugFromURL ( url:string|string[] ):string {
     if ( !Array.isArray(url) ) {
       return this.resolveSlugFromURL (this.splitURL(url))
-    } 
+    }
     const [ lang='', slug='' ] = url
     const locale = this.resolveLocaleFromURL(url)
     if ( !slug ) {
@@ -77,7 +77,12 @@ export class URLResolver {
   }
 
   public resolveChapterConfigFromURL ( url:string|string[] ):ChapterConfig {
-    const slug = this.resolveSlugFromURL ( url )
+    let slug = this.resolveSlugFromURL ( url )
+
+    // remove possible hash / fragment from slug
+    const h = slug.indexOf('#')
+    slug = slug.substring(0, h != -1 ? h : slug.length)
+
     const locale = this.resolveLocaleFromURL ( url )
     return this.config.chapters.find ( chapter => chapter.slug[locale] === slug )
   }
